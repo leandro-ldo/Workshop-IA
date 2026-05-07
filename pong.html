@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clássico Pong</title>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 4px solid #fff;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .instrucoes {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pong JS</h1>
+    <canvas id="pongCanvas" width="800" height="400"></canvas>
+    
+    <div class="instrucoes">
+        <p>Use as teclas <strong>W</strong> (Cima) e <strong>S</strong> (Baixo) para mover.</p>
+        <p>O jogador da direita (IA) tentará te vencer!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("pongCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Configurações da Raquete
+        const paddleWidth = 10, paddleHeight = 100;
+        let playerY = (canvas.height - paddleHeight) / 2;
+        let computerY = (canvas.height - paddleHeight) / 2;
+        const paddleSpeed = 8;
+
+        // Configurações da Bola
+        let ballX = canvas.width / 2, ballY = canvas.height / 2;
+        let ballSize = 10;
+        let ballSpeedX = 5, ballSpeedY = 5;
+
+        // Placar
+        let playerScore = 0, computerScore = 0;
+
+        // Controles
+        let upPressed = false, downPressed = false;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "w" || e.key === "W") upPressed = true;
+            if (e.key === "s" || e.key === "S") downPressed = true;
+        });
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "w" || e.key === "W") upPressed = false;
+            if (e.key === "s" || e.key === "S") downPressed = false;
+        });
+
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = -ballSpeedX; // Muda a direção
+        }
+
+        function update() {
+            // Movimento do Jogador
+            if (upPressed && playerY > 0) playerY -= paddleSpeed;
+            if (downPressed && playerY < canvas.height - paddleHeight) playerY += paddleSpeed;
+
+            // Movimento da IA (Segue a bola suavemente)
+            let computerCenter = computerY + (paddleHeight / 2);
+            if (computerCenter < ballY - 35) computerY += 6;
+            else if (computerCenter > ballY + 35) computerY -= 6;
+
+            // Movimento da Bola
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            // Colisão com Paredes (Cima/Baixo)
+            if (ballY <= 0 || ballY + ballSize >= canvas.height) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // Colisão com Raquete do Jogador
+            if (ballX <= paddleWidth && ballY > playerY && ballY < playerY + paddleHeight) {
+                ballSpeedX = -ballSpeedX;
+            }
+
+            // Colisão com Raquete da IA
+            if (ballX >= canvas.width - paddleWidth - ballSize && ballY > computerY && ballY < computerY + paddleHeight) {
+                ballSpeedX = -ballSpeedX;
+            }
+
+            // Pontuação
+            if (ballX < 0) {
+                computerScore++;
+                resetBall();
+            } else if (ballX > canvas.width) {
+                playerScore++;
+                resetBall();
+            }
+        }
+
+        function draw() {
+            // Limpar Tela
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Linha Central
+            ctx.strokeStyle = "#fff";
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+
+            // Desenhar Raquetes
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, playerY, paddleWidth, paddleHeight); // Jogador
+            ctx.fillRect(canvas.width - paddleWidth, computerY, paddleWidth, paddleHeight); // IA
+
+            // Desenhar Bola
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Desenhar Placar
+            ctx.font = "32px Arial";
+            ctx.fillText(playerScore, canvas.width / 4, 50);
+            ctx.fillText(computerScore, 3 * canvas.width / 4, 50);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
